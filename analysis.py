@@ -40,6 +40,7 @@ lc_z = fileRoot['lc_z'].array(library = 'np')
 lc_E = fileRoot['lc_E'].array(library = 'np')
 layers_id = fileRoot['layers_id'].array(library = 'np')
 layers_thick = fileRoot['layers_thick'].array(library = 'np')
+lc_nhits = fileRoot['LC_nhits'].array(library = 'np')
 
 totalTracksterEnergy_raw = list()
 totalTracksterEnergy_regressed = list()
@@ -101,132 +102,117 @@ for i in layers_id:
         zList.append(j)
 zs = np.unique(zList)[1:]
 
-print(zs)
-mask_input_flat = list()
-mask_output_flat = list()
-lc_id_flat = list()
-lc_E_flat = list()
-thickness_flat = list()
-for ev in range(len(mask_input)):
-    for i in range(len(mask_input[ev])):
-        mask_input_flat.append(mask_input[ev][i])
-        mask_output_flat.append(mask_output[ev][i])
-        lc_id_flat.append(layers_id[ev][i])
-        lc_E_flat.append(lc_E[ev][i])
-        thickness_flat.append(layers_thick[ev][i])
+hgcal_nhits_per_ev = list()
+print(len(hgcal_nhits_per_ev), len(zs))
 
+for ev in range(len(lc_nhits)):
+    list_per_ev = [0 for i in range(len(zs))]
+    for z in range(len(zs)):
+        for j in range(len(lc_nhits[ev])):
+            if(z == layers_id[ev][j]):
+                list_per_ev[z] += lc_nhits[ev][j]
+    hgcal_nhits_per_ev.append(list_per_ev)              
+
+
+cut_nhits = 10
 fullLCEnergy = list()
 noPRLCEnergy = list()
-for z in zs: #all but -999
-    fullLCEnergy_z = list()
-    noPRLCEnergy_z = list()
-    for i in range(len(mask_input_flat)):
-        if(lc_id_flat[i] == z): 
-            fullLCEnergy_z.append(lc_E_flat[i])#tutti i lcs divisi per z
-            if(mask_input_flat[i] == 0):
-                noPRLCEnergy_z.append(lc_E_flat[i])
-                
-    
+for ev in range(len(mask_input)):
+    fullLCEnergy_z = [0 for i in range(len(zs))]
+    noPRLCEnergy_z = [0 for i in range(len(zs))]
+    for z in range(len(zs)):
+        for i in range(len(mask_input[ev])):
+            if(layers_id[ev][i] == zs[z] and hgcal_nhits_per_ev[ev][z] > cut_nhits):
+                fullLCEnergy_z[z] += lc_E[ev][i]
+                if(mask_input[ev][i] == 0):
+                    noPRLCEnergy_z[z] += lc_E[ev][i]
     fullLCEnergy.append(fullLCEnergy_z)
     noPRLCEnergy.append(noPRLCEnergy_z)
 
-fullLCEnergyHD = list()
-noPRLCEnergyHD = list()
-for z in zs: #all but -999
-    fullLCEnergy_z = list()
-    noPRLCEnergy_z = list()
-    for i in range(len(mask_input_flat)):
-        if(lc_id_flat[i] == z and thickness_flat[i] <= 120): 
-            fullLCEnergy_z.append(lc_E_flat[i])#tutti i lcs divisi per z
-            if(mask_input_flat[i] == 0):
-                noPRLCEnergy_z.append(lc_E_flat[i])
-                
-    
-    fullLCEnergyHD.append(fullLCEnergy_z)
-    noPRLCEnergyHD.append(noPRLCEnergy_z)
-
 fullLCEnergyLD = list()
 noPRLCEnergyLD = list()
-for z in zs: #all but -999
-    fullLCEnergy_z = list()
-    noPRLCEnergy_z = list()
-    for i in range(len(mask_input_flat)):
-        if(lc_id_flat[i] == z and thickness_flat[i] > 120): 
-            fullLCEnergy_z.append(lc_E_flat[i])#tutti i lcs divisi per z
-            if(mask_input_flat[i] == 0):
-                noPRLCEnergy_z.append(lc_E_flat[i])
-                
-    
+for ev in range(len(mask_input)):
+    fullLCEnergy_z = [0 for i in range(len(zs))]
+    noPRLCEnergy_z = [0 for i in range(len(zs))]
+    for z in range(len(zs)):
+        for i in range(len(mask_input[ev])):
+            if(layers_id[ev][i] == zs[z] and hgcal_nhits_per_ev[ev][z] > cut_nhits and layers_thick[ev][i] > 120):
+                fullLCEnergy_z[z] += lc_E[ev][i]
+                if(mask_input[ev][i] == 0):
+                    noPRLCEnergy_z[z] += lc_E[ev][i]
     fullLCEnergyLD.append(fullLCEnergy_z)
     noPRLCEnergyLD.append(noPRLCEnergy_z)
+
+fullLCEnergyHD = list()
+noPRLCEnergyHD = list()
+for ev in range(len(mask_input)):
+    fullLCEnergy_z = [0 for i in range(len(zs))]
+    noPRLCEnergy_z = [0 for i in range(len(zs))]
+    for z in range(len(zs)):
+        for i in range(len(mask_input[ev])):
+            if(layers_id[ev][i] == zs[z] and hgcal_nhits_per_ev[ev][z] > cut_nhits and layers_thick[ev][i] <= 120):
+                fullLCEnergy_z[z] += lc_E[ev][i]
+                if(mask_input[ev][i] == 0):
+                    noPRLCEnergy_z[z] += lc_E[ev][i]
+    fullLCEnergyHD.append(fullLCEnergy_z)
+    noPRLCEnergyHD.append(noPRLCEnergy_z)
     
-profX = ROOT.TProfile("Profile", "Profile", 50, 0, 50, 0, 1)
-for i in range(len(fullLCEnergy)):
-    sumZ = 0
-    sumZNoPr = 0
-    for e in fullLCEnergy[i]:
-        sumZ += e
-    for e in noPRLCEnergy[i]:
-        sumZNoPr += e
-    profX.Fill(zs[i], sumZNoPr/ sumZ)
-    
-profXLD = ROOT.TProfile("ProfileLD", "ProfileLD", 50, 0, 50, 0, 1)
-for i in range(len(fullLCEnergyLD)):
-    sumZ = 0
-    sumZNoPr = 0
-    for e in fullLCEnergyLD[i]:
-        sumZ += e
-    for e in noPRLCEnergyLD[i]:
-        sumZNoPr += e
-#     print(sumZ)
-    if(sumZ == 0):
-        profXLD.Fill(zs[i], -99)
-    else:
-        profXLD.Fill(zs[i], sumZNoPr/ sumZ)
-    
-profXHD = ROOT.TProfile("ProfileHD", "ProfileHD", 50, 0, 50, 0, 1)
-for i in range(len(fullLCEnergyHD)):
-    sumZ = 0
-    sumZNoPr = 0
-    for e in fullLCEnergyHD[i]:
-        sumZ += e
-    for e in noPRLCEnergyHD[i]:
-        sumZNoPr += e
-    if(sumZ == 0):
-        profXHD.Fill(zs[i], -99)
-    else:
-        profXHD.Fill(zs[i], sumZNoPr/ sumZ)
+histo = ROOT.TH2F("Profile", "Profile", 50, 0, 50, 50, 0, 1)
+
+for ev in range(len(fullLCEnergy)):
+    for z in range(len(zs)):
+        if(fullLCEnergy[ev][z] > 0):
+            histo.Fill(zs[z], noPRLCEnergy[ev][z]/fullLCEnergy[ev][z])        
+
+histoLD = ROOT.TH2F("ProfileLD", "ProfileLD", 50, 0, 50, 50, 0, 1)
+
+for ev in range(len(fullLCEnergyLD)):
+    for z in range(len(zs)):
+        if(fullLCEnergyLD[ev][z] > 0):
+            histoLD.Fill(zs[z], noPRLCEnergyLD[ev][z]/fullLCEnergyLD[ev][z])      
+
+histoHD = ROOT.TH2F("ProfileHD", "ProfileHD", 50, 0, 50, 50, 0, 1)
+
+for ev in range(len(fullLCEnergyHD)):
+    for z in range(len(zs)):
+        if(fullLCEnergyHD[ev][z] > 0):
+            histoHD.Fill(zs[z], noPRLCEnergyHD[ev][z]/fullLCEnergyHD[ev][z])      
+
 
 c = ROOT.TCanvas("c", "c", 1000,1000)
-# profX = histoAll.ProfileX()
-profX.SetMarkerColor(4)
-profX.SetMarkerSize(1.5)
-profX.SetMarkerStyle(20)
+profX = histo.ProfileX()
+profX.GetYaxis().SetRangeUser(0,1)
+profX.SetMarkerColor(4);
+profX.SetMarkerSize(1.5);
+profX.SetMarkerStyle(20);
 profX.SetStats(0000)
 profX.SetTitle("LC NHits < 3 / All LCs ")
 profX.GetXaxis().SetTitle("HGCal Layer")
 profX.GetYaxis().SetTitle("Ratio")
 profX.Draw("P")
-c.SaveAs(pathPlot + "RatioLCPRAlongLayerID.png", "png")
+c.Draw()
+c.SaveAs(pathPlot + "RatioLCPRAlongLayerIDAll.png", "png")
+# c.Show()
 
-c2 = ROOT.TCanvas("c2", "c2", 1000,1000)
+c2 = ROOT.TCanvas("c", "c", 1000,1000)
 leg = ROOT.TLegend(0.3,0.7,0.5,0.9)
-# profX = histoAll.ProfileX()
+profXLD = histoLD.ProfileX()
+profXHD = histoHD.ProfileX()
 profX.GetYaxis().SetRangeUser(0,1)
-profX.SetMarkerColor(4)
-profX.SetMarkerSize(1.2)
-profX.SetMarkerStyle(20)
+profX.SetMarkerColor(4);
+profX.SetMarkerSize(1.2);
+profX.SetMarkerStyle(20);
 profX.SetStats(0000)
 profX.SetTitle("LC NHits < 3 Energy  / All LCs Energy")
 profX.GetXaxis().SetTitle("HGCal Layer")
 profX.GetYaxis().SetTitle("Ratio")
-profXLD.SetMarkerColor(ROOT.kRed)
-profXLD.SetMarkerSize(1.2)
-profXLD.SetMarkerStyle(20)
+profXLD.SetMarkerColor(ROOT.kRed);
+profXLD.SetMarkerSize(1.2);
+profXLD.SetMarkerStyle(20);
 profXLD.SetStats(0000)
-profXHD.SetMarkerColor(ROOT.kGreen)
-profXHD.SetMarkerSize(1.2)
-profXHD.SetMarkerStyle(20)
+profXHD.SetMarkerColor(ROOT.kGreen);
+profXHD.SetMarkerSize(1.2);
+profXHD.SetMarkerStyle(20);
 profXHD.SetStats(0000)
 leg.AddEntry(profX, "All")
 leg.AddEntry(profXLD, "LD >= 120")
@@ -235,8 +221,10 @@ profX.Draw("P")
 profXLD.Draw("SAME P")
 profXHD.Draw("SAME P")
 leg.Draw("SAME")
+c2.Draw()
 c2.SaveAs(pathPlot + "RatioLCPRAlongLayerIDMulti.png", "png")
-# c2.Draw()
+
+
 
 ##############################################################
 # LC not in pattern recognition energy spectrumm
