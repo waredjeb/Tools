@@ -8,7 +8,7 @@ import mplhep as hep
 
 plt.style.use([hep.style.ROOT, hep.style.firamath])
 
-fileName = "./data/output_SinglePi.root"
+fileName = "./data/output_CloseByPion_NoSiblings_20-25deg.root"
 file = uproot.open(fileName)
 keys = file.keys()
 
@@ -16,7 +16,7 @@ fileRoot = file[keys[1]]
 
 titleSave = "_" + fileName[22:-5]
 
-pathPlot = "./plots/NoSiblings/SinglePions/"
+pathPlot = "./plots/NoSiblings/CloseByPion_NoSiblings_20-25deg/"
 mkdir_p(pathPlot)
 
 sim_rawEnergy = fileRoot["sim_rawEnergy"].array(library="np")
@@ -42,6 +42,17 @@ lc_E = fileRoot["lc_E"].array(library="np")
 layers_id = fileRoot["layers_id"].array(library="np")
 layers_thick = fileRoot["layers_thick"].array(library="np")
 lc_nhits = fileRoot["LC_nhits"].array(library="np")
+n_tracksters = fileRoot["n_tracksters"].array(library="np")
+n_trackstersEM = fileRoot["n_trackstersEM"].array(library="np")
+n_trackstersHAD = fileRoot["n_trackstersHAD"].array(library="np")
+
+n_lc = fileRoot["n_LCtrackster"].array(library="np")
+n_lcEM = fileRoot["n_LCtracksterEM"].array(library="np")
+n_lcHAD = fileRoot["n_LCtracksterHAD"].array(library="np")
+lc_id_trackster = fileRoot["lc_id_trackster"].array(library="np")
+lc_id_tracksterEM = fileRoot["lc_id_tracksterEM"].array(library="np")
+lc_id_tracksterHAD = fileRoot["lc_id_tracksterHAD"].array(library="np")
+
 
 totalTracksterEnergy_raw = list()
 totalTracksterEnergy_regressed = list()
@@ -76,6 +87,14 @@ ratioLCNOPR_CP = list()
 ratioLinking_sim = list()
 ratioLinking_regressed = list()
 ratioLinking_lcPR = list()
+
+N_trackster = list()
+N_tracksterEM = list()
+N_tracksterHAD = list()
+
+N_lc = list()
+N_lcEM = list()
+N_lcHAD = list()
 
 for i in range(len(sim_rawEnergy)):
     if sim_regressedEnergy[i][0] > 0 and lc_prEnergy[i][0] > 0:
@@ -189,6 +208,72 @@ for ev in range(len(fullLCEnergyHD)):
         if fullLCEnergyHD[ev][z] > 0:
             histoHD.Fill(zs[z], noPRLCEnergyHD[ev][z] / fullLCEnergyHD[ev][z])
 
+for ev in range(len(n_tracksters)):
+    for n in n_tracksters[ev]:
+        N_trackster.append(n)
+    for n in n_trackstersEM[ev]:
+        N_tracksterEM.append(n)
+    for n in n_trackstersHAD[ev]:
+        N_tracksterHAD.append(n)
+
+for ev in range(len(n_lc)):
+    for n in n_lc[ev]:
+        N_lc.append(n)
+    for n in n_lcEM[ev]:
+        N_lcEM.append(n)
+    for n in n_lcHAD[ev]:
+        N_lcHAD.append(n)
+
+trackstersLenght = list()
+trackstersSkippedLayers = list()
+for ev in lc_id_trackster:
+    for t in ev:
+        tnp = np.array(t)
+        tnp_unique = np.unique(tnp)
+        tnpsorted = sorted(tnp_unique)
+#         print(tnpsorted)
+#         print(tnpsorted[-1] - tnpsorted[0])
+        layerLenght = tnpsorted[-1] - tnpsorted[0]
+        N_layers_trackster = len(tnpsorted)-1
+        skipped_layers = abs(N_layers_trackster - layerLenght)
+        if(skipped_layers > 2):
+            print(tnpsorted, len(tnpsorted))
+        trackstersLenght.append(N_layers_trackster)
+        trackstersSkippedLayers.append(skipped_layers)
+
+trackstersLenghtEM = list()
+trackstersSkippedLayersEM = list()
+for ev in lc_id_tracksterEM:
+    for t in ev:
+        tnp = np.array(t)
+        tnp_unique = np.unique(tnp)
+        tnpsorted = sorted(tnp_unique)
+#         print(tnpsorted)
+#         print(tnpsorted[-1] - tnpsorted[0])
+        layerLenght = tnpsorted[-1] - tnpsorted[0]
+        N_layers_trackster = len(tnpsorted)-1
+        skipped_layers = abs(N_layers_trackster - layerLenght)
+        if(skipped_layers > 2):
+            print(tnpsorted, len(tnpsorted))
+        trackstersLenghtEM.append(N_layers_trackster)
+        trackstersSkippedLayersEM.append(skipped_layers)
+
+trackstersLenghtHAD = list()
+trackstersSkippedLayersHAD = list()
+for ev in lc_id_tracksterHAD:
+    for t in ev:
+        tnp = np.array(t)
+        tnp_unique = np.unique(tnp)
+        tnpsorted = sorted(tnp_unique)
+#         print(tnpsorted)
+#         print(tnpsorted[-1] - tnpsorted[0])
+        layerLenght = tnpsorted[-1] - tnpsorted[0]
+        N_layers_trackster = len(tnpsorted)-1
+        skipped_layers = abs(N_layers_trackster - layerLenght)
+        if(skipped_layers > 2):
+            print(tnpsorted, len(tnpsorted))
+        trackstersLenghtHAD.append(N_layers_trackster)
+        trackstersSkippedLayersHAD.append(skipped_layers)
 
 c = ROOT.TCanvas("c", "c", 1000, 1000)
 profX = histo.ProfileX()
@@ -388,18 +473,58 @@ lcNoUsed_flat = []
 for i in lc_noUsed:
     lcNoUsed_flat.append(i[0])
 plt.figure(figsize=(10, 10))
-plt.hist(lcNoUsed_flat, bins=50, range=(0.01, 200), histtype="step")
+plt.hist(lcNoUsed_flat, bins=50, range=(0.01, 200), histtype="step", lw = 2)
 plt.title("LCs not clusterized total energy")
 plt.xlabel("Energy [GeV]")
 plt.ylabel("Entries")
+plt.savefig(pathPlot + "LCNoClusterizedEnergy" + ".png")
 # plt.show()
 
 ##############################################################
 # Ratio LCs NHits > 2 wrt SimmTrackster
 ##############################################################
 plt.figure(figsize=(10, 10))
-plt.hist(ratioLCPR_Sim, bins=30, histtype="step")
+plt.hist(ratioLCPR_Sim, bins=30, histtype="step", range = (0.01,1), lw = 2)
 plt.title("LC NHits > 2 Energy / SimTrackster Energy")
 plt.xlabel("Ratio Energy")
 plt.savefig(pathPlot + "RatioLCPRvsSimTrk" + ".png")
 # plt.show()
+
+
+plt.figure(figsize=(10, 10))
+plt.hist(N_trackster, bins=10, histtype="step", range = (0,10), label = 'MERGE', lw = 2)
+plt.hist(N_tracksterHAD, bins = 10, histtype='step', range = (0,10), label = 'HAD', lw = 2)
+plt.hist(N_tracksterEM, bins = 10, histtype='step', range = (0,10), label = 'EM', lw = 2)
+plt.title(f"Number of Reco-Tracksters: Total {sum(N_trackster)}")
+plt.xlabel("Number of Tracksters")
+plt.legend(loc = 'upper right')
+plt.savefig(pathPlot + "NTracksters" + ".png")
+
+
+plt.figure(figsize=(10, 10))
+plt.hist(N_lc, bins=50, histtype="step", range = (1,max(N_lc)), label = 'MERGE', lw = 2)
+plt.hist(N_lcHAD, bins = 50, histtype='step', range = (1,max(N_lc)), label = 'HAD', lw = 2)
+plt.hist(N_lcEM, bins = 50, histtype='step', range = (1,max(N_lc)), label = 'EM', lw = 2)
+plt.title(f"Number of LC in trackster: Total {sum(N_lc)}")
+plt.xlabel("Number of LCs")
+plt.legend(loc = 'upper right')
+plt.savefig(pathPlot + "NLCs" + ".png")
+
+
+plt.figure(figsize=(10, 10))
+plt.hist(trackstersSkippedLayers, bins=5, histtype="step", range = (0,5), label = 'MERGE', lw = 2)
+plt.hist(trackstersSkippedLayersEM, bins=5, histtype="step", range = (0,5), label = 'EM', lw = 2)
+plt.hist(trackstersSkippedLayersHAD, bins=5, histtype="step", range = (0,5), label = 'HAD', lw =2)
+plt.title("Number of Layers Skipped")
+plt.xlabel("Skipped Layers")
+plt.legend(loc = 'upper right')
+plt.savefig(pathPlot + "SkippedLayers" + ".png")
+
+plt.figure(figsize=(10, 10))
+plt.hist(trackstersLenght, bins=50, histtype="step", range = (0,50), label = 'MERGE', lw = 2)
+plt.hist(trackstersLenghtEM, bins=50, histtype="step", range = (0,50), label = 'MERGE', lw = 2)
+plt.hist(trackstersLenghtHAD, bins=50, histtype="step", range = (0,50), label = 'MERGE', lw = 2)
+plt.title("Number of Layers in Trackster")
+plt.xlabel("Number of Tracksters Layer")
+plt.legend(loc = 'upper right')
+plt.savefig(pathPlot + "NLayerTracksters" + ".png")
