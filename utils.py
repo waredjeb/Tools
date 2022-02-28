@@ -426,3 +426,18 @@ def plots3DwithProjectionSeeds3D_2(data, dataE, data_idx, data3D, dataE3D, data_
     # cbar.set_label("LCs energy", fontsize = 50)
     plt.savefig(save + ".png", bbox_inches='tight')
     # close(fig)
+import os
+
+#Create new directory
+def mkdir_p(mypath):
+    '''Function to create a new directory, if it not already exist
+        - mypath : directory path
+    '''
+    from errno import EEXIST
+    from os import makedirs,path
+    try:
+        makedirs(mypath)
+    except OSError as exc:
+        if exc.errno == EEXIST and path.isdir(mypath):
+            pass
+        else: raise

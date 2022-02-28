@@ -153,6 +153,7 @@ for i_ev, ev in enumerate(events):
     stTofstMap = simTracksterToFineSimtracksterMap_handle.product()
     simTracksters = simtrackstersH.product()
     finesimTracksters = finesimtrackstersH.product()
+
     lcs = layerClusters.product()
     gps = gpH.product()
     seedsLow = clue3DLowseedsH.product()
@@ -226,6 +227,9 @@ for i_ev, ev in enumerate(events):
     print(f"SimTracksters {len(simTracksters)}, FineSimTracksters {len(finesimTracksters)}, CARecoTrackster {len(CAtrackster)}")
     # if(len(simTracksters) != len(finesimTracksters)):
         # print(f"SimTracksters {len(simTracksters)}, FineSimTracksters {len(finesimTracksters)}")
+    print(f"SimTracksters {len(simTracksters)}, FineSimTracksters {len(finesimTracksters)}")
+    if(len(simTracksters) != len(finesimTracksters)):
+        print(f"SimTracksters {len(simTracksters)}, FineSimTracksters {len(finesimTracksters)}")
     for idx, st in enumerate(simTracksters):
         N_lcs = st.vertices().size()
         for i_dx in range(N_lcs):
@@ -377,9 +381,5 @@ plotHisto(gp_phi, bins, "genPart phi", "phi", outputdir + "gp_phi")
 plotHisto(gp_energy, 30, "genPart energy", "energy", outputdir + "gp_energy")
 
 
-print(f"Seeds Low {number_seedsLow} Trackster Low {number_tracksterLow}")
-print(f"Seeds High {number_seedsHigh} Trackster High {number_tracksterHigh}")
-print(f"Total number of seeds {number_seedsHigh + number_seedsLow}")
-print(f"Total number of CA tracksters {number_CAtracksters}")
 
 
