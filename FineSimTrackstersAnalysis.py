@@ -67,6 +67,9 @@ cpslabel = ("mix", "MergedCaloTruth")
 gpH = Handle("std::vector<reco::GenParticle")
 gpL = ("genParticles")
 
+simTracksterToFineSimtracksterMap_handle = Handle("std::map<unsigned int,std::vector<unsigned int> > ")
+simTracksterToFineSimtracksterMap_label = ("ticlFineSimTracksters", "fine")
+
 layerClusters  = Handle("std::vector<reco::CaloCluster>")
 layerClustersLabel = ("hgcalLayerClusters")
 
@@ -145,9 +148,11 @@ for i_ev, ev in enumerate(events):
     ev.getByLabel (clue3DLowTrackstersLabel, clue3DLowTrackstersH)
     ev.getByLabel (clue3DHighTrackstersLabel, clue3DHighTrackstersH)
     ev.getByLabel (CATracksterMergeLabel, CATracksterMergeH)
+    ev.getByLabel (simTracksterToFineSimtracksterMap_label, simTracksterToFineSimtracksterMap_handle)
 
+    stTofstMap = simTracksterToFineSimtracksterMap_handle.product()
     simTracksters = simtrackstersH.product()
-    finesimTracksters = simtrackstersH.product()
+    finesimTracksters = finesimtrackstersH.product()
     lcs = layerClusters.product()
     gps = gpH.product()
     seedsLow = clue3DLowseedsH.product()
@@ -182,6 +187,9 @@ for i_ev, ev in enumerate(events):
     lcsE_fineSimTracksters = []
     lcsTrkIdx_simTracksters = []
     lcsETrkIdx_fineSimTracksters = []
+    lcs_CAtrackster = []
+    lcsE_CAtrackster = []
+    lcsTrkIdx_CAtrackster = []
 
     for i_t in range(len(tracksterLow)):
         t_l = tracksterLow[i_t]
@@ -215,9 +223,9 @@ for i_ev, ev in enumerate(events):
         lcs_energy.append(lc.energy())
         lcs_z.append(lc.z())
     final_idx = 0
-    print(f"SimTracksters {len(simTracksters)}, FineSimTracksters {len(finesimTracksters)}")
-    if(len(simTracksters) != len(finesimTracksters)):
-        print(f"SimTracksters {len(simTracksters)}, FineSimTracksters {len(finesimTracksters)}")
+    print(f"SimTracksters {len(simTracksters)}, FineSimTracksters {len(finesimTracksters)}, CARecoTrackster {len(CAtrackster)}")
+    # if(len(simTracksters) != len(finesimTracksters)):
+        # print(f"SimTracksters {len(simTracksters)}, FineSimTracksters {len(finesimTracksters)}")
     for idx, st in enumerate(simTracksters):
         N_lcs = st.vertices().size()
         for i_dx in range(N_lcs):
@@ -233,7 +241,7 @@ for i_ev, ev in enumerate(events):
             lcs_fineSimTracksters.append(sim_lc)
             lcsE_fineSimTracksters.append(sim_lc.energy())
             # print(idx + final_idx)
-            lcsETrkIdx_fineSimTracksters.append(idx)
+            lcsETrkIdx_fineSimTracksters.append(idx*2)
 
     for fs in finesimTracksters:
         for i in range(fs.vertices().size()):
@@ -248,6 +256,16 @@ for i_ev, ev in enumerate(events):
             if(found == False):
                 print(f"lc_ss {lc_fs.x(), lc_fs.y(), lc_fs.z()}")# lc_fs {lc_ss.x(), lc_ss.y(), lc_ss.z()}")
                 print("FOUND NON MATCHING LCS")
+        final_idx = idx
+    for idx, st in enumerate(CAtrackster):
+        N_lcs = st.vertices().size()
+        for i_dx in range(N_lcs):
+            sim_lc = lcs[st.vertices(i_dx)]
+            lcs_CAtrackster.append(sim_lc)
+            lcsE_CAtrackster.append(sim_lc.energy())
+            lcsTrkIdx_CAtrackster.append(idx*2)
+        
+    print(len(CAtrackster), lcsTrkIdx_CAtrackster )
     final_sim_lc = lcs_simTracksters
     final_sim_lcE = lcsE_simTracksters
     final_sim_lcIdx = lcsTrkIdx_simTracksters
@@ -317,8 +335,25 @@ for i_ev, ev in enumerate(events):
             seeds_to_plot.append(s)
         # for j in range(len(lcs_to_plot)):
         # plots3DwithProjectionSeeds(lcs_to_plot, lcsE_to_plot, index_trackster, seeds_to_plot, outputdir3D + 'trackster_'+str(j)+"_"+str(i_ev) + '.png')
-        plots3DwithProjectionSeeds3D(lcs_simTracksters, lcsE_simTracksters, lcsTrkIdx_simTracksters,[], [], [],[], outputdir3D + 'Simtrackster_'+str(j)+"_"+str(i_ev) + '.png')
-        plots3DwithProjectionSeeds3D(lcs_fineSimTracksters, lcsE_fineSimTracksters, lcsETrkIdx_fineSimTracksters,[], [], [],[], outputdir3D + 'fineSimtrackster_'+str(j)+"_"+str(i_ev) + '.png')
+        lc_x = []
+        lc_y = []
+        lc_z = []
+        for l in lcs_simTracksters:
+            lc_x.append(l.x())
+            lc_y.append(l.y())
+            lc_z.append(l.z())
+        for l in lcs_fineSimTracksters:
+            lc_x.append(l.x())
+            lc_y.append(l.y())
+            lc_z.append(l.z())
+        minx = min(lc_x) -5
+        maxx = max(lc_x) + 5
+        miny = min(lc_y) - 5
+        maxy = max(lc_y) + 5
+        minz = min(lc_z) -5 
+        maxz = max(lc_z) + 5
+        plots3DwithProjectionSeeds3D(lcs_simTracksters, lcsE_simTracksters, lcsTrkIdx_simTracksters,lcs_CAtrackster, lcsE_CAtrackster, lcsTrkIdx_CAtrackster,[], minx,maxx, miny,maxy,minz,maxz, "SimTracksters", outputdir3D + 'Simtrackster_'+str(j)+"_"+str(i_ev) + '.png', map_ = False)
+        plots3DwithProjectionSeeds3D(lcs_fineSimTracksters, lcsE_fineSimTracksters, lcsETrkIdx_fineSimTracksters,lcs_CAtrackster, lcsE_CAtrackster, lcsTrkIdx_CAtrackster,[], minx,maxx, miny,maxy,minz,maxz, "SlimSimTracksters", outputdir3D + 'fineSimtrackster_'+str(j)+"_"+str(i_ev) + '.png', map_ = True)
 
 
 bins = 30
@@ -340,7 +375,6 @@ plotHisto(cp_energy, 30, "cp energy", "energy", outputdir + "cp_energy")
 plotHisto(gp_eta, bins, "genPart eta", "eta", outputdir + "gp_eta")
 plotHisto(gp_phi, bins, "genPart phi", "phi", outputdir + "gp_phi")
 plotHisto(gp_energy, 30, "genPart energy", "energy", outputdir + "gp_energy")
-
 
 
 print(f"Seeds Low {number_seedsLow} Trackster Low {number_tracksterLow}")
